@@ -1,6 +1,13 @@
 jade = require 'jade'
 sysPath = require 'path'
 
+clone = (obj) ->
+  return obj  if null is obj or "object" isnt typeof obj
+  copy = obj.constructor()
+  for attr of obj
+    copy[attr] = obj[attr]  if obj.hasOwnProperty(attr)
+  copy
+
 module.exports = class JadeCompiler
   brunchPlugin: yes
   type: 'template'
@@ -9,16 +16,19 @@ module.exports = class JadeCompiler
   _dependencyRegExp: /^ *(?:include|extends) (.*)/
 
   constructor: (@config) ->
+    options = @config.plugins?.jade?.options or \
+              @config.plugins?.jade or
+                compileDebug: no,
+                client: yes
+
+    @options = clone options
     return
 
   compile: (data, path, callback) ->
     try
-      content = jade.compile data,
-        compileDebug: no,
-        client: yes,
-        filename: path,
-        pretty: !!@config.plugins?.jade?.pretty
-      result = "module.exports = #{content};"
+      @options.filename = path
+      jadefn = jade.compile data, @options
+      result = "module.exports = #{jadefn};"
     catch err
       error = err
     finally

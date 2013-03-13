@@ -21,9 +21,11 @@ describe('Plugin', function() {
     var expected = '<!DOCTYPE html>';
 
     plugin.compile(content, 'template.jade', function(error, data) {
-      expect(error).not.to.be.ok;
-      expect(eval(data)()).to.equal(expected);
-      done();
+      if(error) done(error);
+      else {
+        expect(eval(data)()).to.equal(expected);
+        done();
+      }
     });
   });
 
@@ -56,6 +58,51 @@ include ../../test/valid2.jade\n\
         expect(error).not.to.be.ok;
         expect(dependencies).to.eql(expected);
         done();
+      });
+    });
+  });
+
+  describe("the configuration of the jade compiler", function(){
+    var jade = require('jade');
+
+    describe('must be backward compatible', function(){
+      it('must manage the options inside config.plugins.jade.options', function(){
+        var config = {
+              plugins: {
+                jade: {
+                  options: { pretty: true }
+                }
+              }
+            }
+          , plugin = new Plugin(config);
+        expect(plugin.options.pretty).to.be.equal(
+          config.plugins.jade.options.pretty);
+      });
+
+      it('must manage the options inside config.plugins.jade too, as backward', function(){
+        var config = {
+              plugins: {
+                jade: {
+                  pretty: true
+                }
+              }
+            }
+          , plugin = new Plugin(config);
+        expect(plugin.options.pretty).to.be.equal(config.plugins.jade.pretty);
+      });
+    });
+    describe("all the compilation options must work", function() {
+      it('should support .compile()', function(done){
+        var content = 'p foo\n.test\np bar'
+          , config = {}
+          , plugin = new Plugin(config);
+
+        plugin.compile(content, 'template.jade', function(error, data) {
+          if(error) done(error);
+          var fn = jade.compile(content);
+          expect(eval(data)()).to.equal(fn());
+          done();
+        });
       });
     });
   });
